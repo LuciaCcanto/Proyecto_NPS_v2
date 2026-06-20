@@ -1,0 +1,210 @@
+{% if mode == 'list' %}
+{% extends "base.html" %}
+{% block title %}Libro de Reclamos{% endblock %}
+{% block page_title %}Libro de Reclamos{% endblock %}
+{% block page_subtitle %}Registro legal de reclamaciones{% endblock %}
+
+{% block topbar_actions %}
+<a href="/reclamos/nuevo" class="btn btn-primary btn-sm">+ Nuevo Reclamo</a>
+{% endblock %}
+
+{% block content %}
+<div class="data-card">
+  <div class="data-card-header">
+    <div class="data-card-title">Reclamos Registrados ({{ reclamos | length }})</div>
+  </div>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>ID Seguimiento</th>
+        <th>Cliente</th>
+        <th>Tipo</th>
+        <th>Estado</th>
+        <th>Fecha</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in reclamos %}
+      <tr>
+        <td><code style="font-family:monospace;font-weight:700;color:var(--blue)">{{ r.tracking_id }}</code></td>
+        <td>
+          <div style="font-weight:600">{{ r.customer_name }}</div>
+          <div style="font-size:0.75rem;color:var(--text-muted)">{{ r.customer_email }}</div>
+        </td>
+        <td><span class="badge badge-blue">{{ r.claim_type }}</span></td>
+        <td>
+          {% if r.status == 'received' %}
+          <span class="badge badge-warning">Recibido</span>
+          {% elif r.status == 'resolved' %}
+          <span class="badge badge-success">Resuelto</span>
+          {% else %}
+          <span class="badge badge-neutral">{{ r.status }}</span>
+          {% endif %}
+        </td>
+        <td style="font-size:0.75rem;color:var(--text-muted)">{{ r.created_at.strftime('%d/%m/%Y') if r.created_at else '—' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted)">Sin reclamos registrados</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+
+{% elif mode == 'confirmation' %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reclamo Registrado</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+<div class="survey-wrapper">
+  <div class="survey-card" style="text-align:center">
+    <div style="font-size:3rem;margin-bottom:16px">📋</div>
+    <h1 style="font-size:1.4rem;font-weight:800;color:var(--navy);margin-bottom:12px">Reclamo Registrado</h1>
+    <p style="font-size:0.9rem;color:var(--text-secondary);margin-bottom:24px">
+      Tu reclamo ha sido registrado exitosamente. Guarda tu número de seguimiento:
+    </p>
+    <div class="reclamos-tracking">
+      <div style="font-size:0.8rem;margin-bottom:8px;opacity:0.7">Número de seguimiento</div>
+      <div class="tracking-id">{{ reclamo.tracking_id }}</div>
+    </div>
+    <p style="font-size:0.8rem;color:var(--text-muted);margin-top:16px">
+      Recibirás una respuesta en un plazo máximo de <strong>15 días hábiles</strong> a {{ reclamo.customer_email }}
+    </p>
+    <a href="{{ thank_you_url }}" class="btn btn-secondary" style="margin-top:20px">Volver al inicio</a>
+  </div>
+</div>
+<script>
+  // Prevent back button from returning to the form
+  history.pushState({ reclamo: 'done' }, '');
+  window.addEventListener('popstate', function () {
+    window.location.replace('{{ thank_you_url }}');
+  });
+</script>
+</body>
+</html>
+
+{% else %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Libro de Reclamos — Formulario</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+<div class="survey-wrapper">
+  <div class="survey-card" style="max-width:600px;position:relative">
+    <button type="button" onclick="history.back()"
+      style="position:absolute;top:12px;right:14px;background:none;border:none;font-size:1.4rem;line-height:1;color:var(--text-muted);cursor:pointer;padding:4px 8px;border-radius:6px"
+      title="Cancelar y volver">&#x2715;</button>
+    <div class="survey-brand">
+      <div class="survey-brand-name" style="color:var(--navy)">📋 Libro de Reclamos</div>
+      <p class="survey-welcome">Por favor completa el formulario. Todos los campos con * son obligatorios.</p>
+    </div>
+
+    <form method="post" action="/reclamos/nuevo" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      {% if company_id %}<input type="hidden" name="company_id" value="{{ company_id }}">{% endif %}
+      {% if branch_id %}<input type="hidden" name="branch_id" value="{{ branch_id }}">{% endif %}
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label class="form-label">Nombre completo *</label>
+          <input class="form-control" type="text" name="customer_name" required maxlength="255" placeholder="Juan Pérez">
+        </div>
+        <div class="form-group">
+          <label class="form-label">DNI / Documento</label>
+          <input class="form-control" type="text" name="customer_dni" maxlength="7" placeholder="1234567">
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label class="form-label">Correo electrónico *</label>
+          <input class="form-control" type="email" name="customer_email" required maxlength="255" placeholder="tu@email.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Teléfono</label>
+          <input class="form-control" type="tel" name="customer_phone" maxlength="9" placeholder="999000000">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Tipo de reclamación *</label>
+        <select class="form-control" name="claim_type" required>
+          <option value="">Selecciona una opción</option>
+          <option value="queja">Queja</option>
+          <option value="reclamo">Reclamo</option>
+          <option value="sugerencia">Sugerencia</option>
+          <option value="consulta">Consulta</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Tipo de bien o servicio involucrado</label>
+        <div style="display:flex;gap:12px;margin-top:4px">
+          <label style="flex:1;cursor:pointer">
+            <input type="radio" name="good_or_service" value="bien" style="display:none" class="tipo-radio-rec">
+            <div class="tipo-btn-rec" style="border:2px solid var(--border);border-radius:8px;padding:10px;text-align:center;transition:all .18s">
+              <div style="font-size:1.2rem">📦</div>
+              <div style="font-size:0.78rem;font-weight:600;color:var(--navy);margin-top:2px">Bien</div>
+            </div>
+          </label>
+          <label style="flex:1;cursor:pointer">
+            <input type="radio" name="good_or_service" value="servicio" style="display:none" class="tipo-radio-rec">
+            <div class="tipo-btn-rec" style="border:2px solid var(--border);border-radius:8px;padding:10px;text-align:center;transition:all .18s">
+              <div style="font-size:1.2rem">🛎️</div>
+              <div style="font-size:0.78rem;font-weight:600;color:var(--navy);margin-top:2px">Servicio</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Monto involucrado (S/.)</label>
+        <input class="form-control" type="number" name="amount_involved" min="0" step="0.01" placeholder="0.00">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Descripción detallada del reclamo *</label>
+        <textarea class="form-control" name="description" required rows="5" maxlength="5000"
+          placeholder="Describe detalladamente tu reclamo..."></textarea>
+      </div>
+
+      <button type="submit" class="btn btn-primary w-full" style="justify-content:center;padding:14px;font-size:0.95rem">
+        Registrar Reclamo
+      </button>
+    </form>
+
+    <p style="font-size:0.7rem;color:var(--text-muted);text-align:center;margin-top:16px">
+      El registro de tu reclamo está protegido por la Ley 29571 del Código de Protección al Consumidor.
+    </p>
+  </div>
+</div>
+<script src="/static/js/app.js"></script>
+<script>
+  document.querySelectorAll('.tipo-radio-rec').forEach(radio => {
+    radio.addEventListener('change', () => {
+      document.querySelectorAll('.tipo-btn-rec').forEach(btn => {
+        btn.style.borderColor = 'var(--border)';
+        btn.style.background = '';
+      });
+      const card = radio.nextElementSibling;
+      card.style.borderColor = '#1A73E8';
+      card.style.background = 'rgba(26,115,232,0.05)';
+    });
+  });
+</script>
+</body>
+</html>
+{% endif %}

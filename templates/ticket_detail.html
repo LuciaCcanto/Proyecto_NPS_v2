@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}{{ ticket.ticket_number }} — Tickets{% endblock %}
+{% block page_title %}{{ ticket.ticket_number }}{% endblock %}
+{% block page_subtitle %}Detalle del ticket de soporte{% endblock %}
+
+{% block content %}
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;align-items:start">
+
+  <!-- Left: Info + Form -->
+  <div>
+    <div class="data-card" style="margin-bottom:16px">
+      <div class="data-card-header">
+        <div class="data-card-title">Información del Ticket</div>
+        <span class="badge badge-{% if ticket.priority.value == 'critical' %}danger{% elif ticket.priority.value == 'high' %}warning{% else %}blue{% endif %}">
+          {{ ticket.priority.value | capitalize }}
+        </span>
+      </div>
+      <div style="padding:20px">
+        <h2 style="font-size:1.05rem;font-weight:700;color:var(--navy);margin-bottom:12px">{{ ticket.title }}</h2>
+        <p style="font-size:0.85rem;color:var(--text-secondary);white-space:pre-wrap;line-height:1.7">{{ ticket.description }}</p>
+
+        {% if ticket.resolution_notes %}
+        <div class="alert alert-success" style="margin-top:16px">
+          <strong>Resolución:</strong> {{ ticket.resolution_notes }}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Update Form -->
+    <div class="data-card">
+      <div class="data-card-header">
+        <div class="data-card-title">Actualizar Ticket</div>
+      </div>
+      <div style="padding:20px">
+        <form method="post" action="/tickets/{{ ticket.id }}/update">
+          <div class="form-group">
+            <label class="form-label">Estado</label>
+            <select class="form-control" name="new_status" id="ticket-status-select">
+              {% for s in TicketStatus %}
+              <option value="{{ s.value }}" {% if ticket.status == s %}selected{% endif %}>
+                {{ s.value | replace('_', ' ') | capitalize }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group" id="resolution-notes-group"
+               style="display:{% if ticket.status.value == 'resolved' %}block{% else %}none{% endif %}">
+            <label class="form-label">Notas de resolución</label>
+            <textarea class="form-control" name="resolution_notes" rows="3"
+              placeholder="Describe cómo se resolvió el caso...">{{ ticket.resolution_notes or '' }}</textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Asignar a</label>
+            <select class="form-control" name="assigned_to_id">
+              <option value="">Sin asignar</option>
+              {% for agent in agents %}
+              <option value="{{ agent.id }}" {% if ticket.assigned_to_id == agent.id %}selected{% endif %}>
+                {{ agent.full_name }} ({{ agent.role.value }})
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <button type="submit" class="btn btn-primary">Actualizar</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Metadata + Audit -->
+  <div>
+    <div class="data-card" style="margin-bottom:16px">
+      <div class="data-card-header"><div class="data-card-title">Metadatos</div></div>
+      <div style="padding:16px">
+        <table style="width:100%;font-size:0.82rem">
+          <tr><td style="color:var(--text-muted);padding:4px 0">Estado</td>
+              <td><span class="badge badge-{% if ticket.status.value == 'open' %}danger{% elif ticket.status.value == 'resolved' %}success{% else %}warning{% endif %}">{{ ticket.status.value }}</span></td></tr>
+          <tr><td style="color:var(--text-muted);padding:4px 0">Creado</td>
+              <td>{{ ticket.created_at.strftime('%d/%m/%Y %H:%M') if ticket.created_at else '—' }}</td></tr>
+          <tr><td style="color:var(--text-muted);padding:4px 0">Actualizado</td>
+              <td>{{ ticket.updated_at.strftime('%d/%m/%Y %H:%M') if ticket.updated_at else '—' }}</td></tr>
+          <tr><td style="color:var(--text-muted);padding:4px 0">Resuelto</td>
+              <td>{{ ticket.resolved_at.strftime('%d/%m/%Y %H:%M') if ticket.resolved_at else '—' }}</td></tr>
+          <tr><td style="color:var(--text-muted);padding:4px 0">Contacto</td>
+              <td>{{ ticket.customer_contact or '—' }}</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="data-card">
+      <div class="data-card-header"><div class="data-card-title">Auditoría ({{ logs | length }})</div></div>
+      <div style="padding:12px">
+        {% for log in logs %}
+        <div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:0.78rem">
+          <div style="font-weight:600;color:var(--text-primary)">{{ log.action | replace('_', ' ') | capitalize }}</div>
+          <div style="color:var(--text-muted)">{{ log.details or '—' }}</div>
+          <div style="color:var(--text-muted);margin-top:2px">{{ log.created_at.strftime('%d/%m/%y %H:%M') if log.created_at else '' }}</div>
+        </div>
+        {% else %}
+        <p style="color:var(--text-muted);font-size:0.8rem;padding:8px 0">Sin registros</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

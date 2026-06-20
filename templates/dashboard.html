@@ -1,0 +1,411 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — WILEY TECNOLOGY{% endblock %}
+{% block page_title %}Dashboard Analítico{% endblock %}
+{% block page_subtitle %}Métricas en tiempo real de satisfacción del cliente{% endblock %}
+
+{% block topbar_actions %}
+<form method="get" action="/dashboard" class="filter-bar">
+  <select name="days" class="filter-select" data-auto-submit>
+    <option value="7"  {% if days == 7  %}selected{% endif %}>Últimos 7 días</option>
+    <option value="30" {% if days == 30 %}selected{% endif %}>Últimos 30 días</option>
+    <option value="90" {% if days == 90 %}selected{% endif %}>Últimos 90 días</option>
+  </select>
+  <select name="tipo_feedback" class="filter-select" data-auto-submit>
+    <option value=""         {% if not tipo_feedback %}selected{% endif %}>Todo</option>
+    <option value="bien"     {% if tipo_feedback == 'bien' %}selected{% endif %}>📦 Bienes</option>
+    <option value="servicio" {% if tipo_feedback == 'servicio' %}selected{% endif %}>🛎️ Servicios</option>
+  </select>
+  <a href="/survey/encuesta-demo" target="_blank" class="btn btn-primary btn-sm">
+    + Nueva encuesta
+  </a>
+</form>
+{% endblock %}
+
+{% block content %}
+
+<!-- ══ FILA 1: KPI CARDS (4 columnas fijas) ══ -->
+<div class="dash-kpi-row">
+
+  <!-- NPS — card destacada -->
+  <div class="kpi-card kpi-nps">
+    <div class="kpi-top">
+      <span class="kpi-label">Net Promoter Score</span>
+      <div class="kpi-icon kpi-icon-blue">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"/>
+        </svg>
+      </div>
+    </div>
+    <div class="kpi-value
+      {% if nps.nps_score >= 50 %}kpi-value-green
+      {% elif nps.nps_score >= 30 %}kpi-value-blue
+      {% elif nps.nps_score >= 0 %}kpi-value-yellow
+      {% else %}kpi-value-red{% endif %}">
+      {{ nps.nps_score }}
+    </div>
+    <div class="kpi-sub">{{ nps.total_responses }} respuestas · últimos {{ days }}d</div>
+    <div class="kpi-bar-row">
+      <div class="kpi-bar-seg red"    style="flex:{{ nps.detractors_pct or 1 }}" title="Detractores {{ nps.detractors_pct }}%"></div>
+      <div class="kpi-bar-seg yellow" style="flex:{{ nps.passives_pct or 1 }}"   title="Pasivos {{ nps.passives_pct }}%"></div>
+      <div class="kpi-bar-seg green"  style="flex:{{ nps.promoters_pct or 1 }}"  title="Promotores {{ nps.promoters_pct }}%"></div>
+    </div>
+    <div class="kpi-bar-labels">
+      <span>Det. {{ nps.detractors_pct }}%</span>
+      <span>Pas. {{ nps.passives_pct }}%</span>
+      <span>Pro. {{ nps.promoters_pct }}%</span>
+    </div>
+  </div>
+
+  <!-- CSAT -->
+  <div class="kpi-card">
+    <div class="kpi-top">
+      <span class="kpi-label">CSAT</span>
+      <div class="kpi-icon kpi-icon-green">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+        </svg>
+      </div>
+    </div>
+    <div class="kpi-value kpi-value-green">{{ csat.csat_pct }}<span class="kpi-unit">%</span></div>
+    <div class="kpi-sub">Satisfechos · prom. {{ csat.csat_score }}/5</div>
+    <div class="kpi-progress-wrap">
+      <div class="kpi-progress-bar" style="width:{{ csat.csat_pct }}%;background:var(--success)"></div>
+    </div>
+    <div class="kpi-footer-stat">{{ csat.total_responses }} respuestas</div>
+  </div>
+
+  <!-- CES -->
+  <div class="kpi-card">
+    <div class="kpi-top">
+      <span class="kpi-label">CES — Esfuerzo</span>
+      <div class="kpi-icon kpi-icon-navy">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        </svg>
+      </div>
+    </div>
+    <div class="kpi-value kpi-value-blue">{{ ces.ces_score }}</div>
+    <div class="kpi-sub">Escala 1–7 · menor es mejor</div>
+    <div class="kpi-progress-wrap">
+      <div class="kpi-progress-bar" style="width:{{ ((7 - ces.ces_score) / 6 * 100)|round }}%;background:var(--blue)"></div>
+    </div>
+    <div class="kpi-footer-stat">{{ ces.total_responses }} respuestas</div>
+  </div>
+
+  <!-- Promotores vs Detractores -->
+  <div class="kpi-card">
+    <div class="kpi-top">
+      <span class="kpi-label">Promotores vs Detractores</span>
+      <div class="kpi-icon kpi-icon-purple">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+      </div>
+    </div>
+    <div style="display:flex; gap:16px; align-items:flex-end; margin:10px 0">
+      <div>
+        <div class="kpi-value kpi-value-green" style="font-size:1.8rem">{{ nps.promoters }}</div>
+        <div class="kpi-sub">Promotores</div>
+      </div>
+      <div style="color:var(--border-mid);font-size:1.4rem;padding-bottom:4px">vs</div>
+      <div>
+        <div class="kpi-value kpi-value-red" style="font-size:1.8rem">{{ nps.detractors }}</div>
+        <div class="kpi-sub">Detractores</div>
+      </div>
+    </div>
+    <div class="kpi-footer-stat">{{ nps.passives }} pasivos este período</div>
+  </div>
+
+</div>
+
+<!-- ══ FILA 2: GRÁFICOS PRINCIPALES ══ -->
+<div class="dash-charts-row">
+
+  <!-- Tendencia NPS — ancho principal -->
+  <div class="dash-chart-main chart-card">
+    <div class="chart-card-header">
+      <div>
+        <div class="chart-title">Tendencia NPS</div>
+        <div class="chart-subtitle">
+          Evolución del score · {{ tipo_label }}
+          {% if trend_labels %}· {{ trend_labels[0] }} → {{ trend_labels[-1] }}{% endif %}
+        </div>
+      </div>
+      <div class="chart-badge">{{ days }}d</div>
+    </div>
+    <div class="chart-container" style="height:280px">
+      <canvas id="trendChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Sidebar de gráficos -->
+  <div class="dash-chart-side">
+
+    <!-- Donut sentimiento -->
+    {% set sent_total = sentiment_dist.get('Positivo', 0) + sentiment_dist.get('Neutral', 0) + sentiment_dist.get('Negativo', 0) %}
+    <div class="chart-card" style="margin-bottom:16px">
+      <div class="chart-card-header">
+        <div>
+          <div class="chart-title">Sentimiento IA</div>
+          <div class="chart-subtitle">Análisis de comentarios</div>
+        </div>
+        {% if sent_total > 0 %}
+        <span class="badge badge-success" style="font-size:0.68rem">Activo</span>
+        {% else %}
+        <span class="badge badge-warning" style="font-size:0.68rem">Sin datos</span>
+        {% endif %}
+      </div>
+
+      {% if sent_total > 0 %}
+      <div class="chart-container" style="height:160px">
+        <canvas id="sentimentChart"></canvas>
+      </div>
+      <div class="dist-legend" style="margin-top:10px">
+        <div class="dist-item">
+          <div class="dist-dot" style="background:#0F9B6E"></div>
+          <div class="dist-label">Positivo</div>
+          <div class="dist-value">{{ sentiment_dist.get('Positivo', 0) }}</div>
+        </div>
+        <div class="dist-item">
+          <div class="dist-dot" style="background:#D97706"></div>
+          <div class="dist-label">Neutral</div>
+          <div class="dist-value">{{ sentiment_dist.get('Neutral', 0) }}</div>
+        </div>
+        <div class="dist-item">
+          <div class="dist-dot" style="background:#DC2626"></div>
+          <div class="dist-label">Negativo</div>
+          <div class="dist-value">{{ sentiment_dist.get('Negativo', 0) }}</div>
+        </div>
+      </div>
+      {% else %}
+      <div style="text-align:center;padding:24px 12px">
+        <div style="font-size:2rem;margin-bottom:8px">🤖</div>
+        <div style="font-size:0.8rem;font-weight:600;color:var(--navy);margin-bottom:6px">Análisis IA no activado</div>
+        <div style="font-size:0.72rem;color:var(--text-muted);line-height:1.5">
+          Configura tu clave de OpenAI en el archivo <code style="background:var(--bg-soft);padding:1px 4px;border-radius:3px">.env</code> para analizar automáticamente el sentimiento de los comentarios.
+        </div>
+        <div style="margin-top:12px;font-size:0.72rem;color:var(--text-muted)">
+          <code style="background:var(--bg-soft);padding:2px 6px;border-radius:3px;display:block;text-align:left">OPENAI_API_KEY=sk-tu-clave-aqui</code>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Accesos rápidos -->
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div class="chart-title">Accesos rápidos</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
+        <a href="/encuesta-demo" class="btn btn-primary btn-sm" style="justify-content:center">
+          Gestionar encuesta demo
+        </a>
+        <a href="/tickets" class="btn btn-secondary btn-sm" style="justify-content:center">
+          Ver tickets críticos
+        </a>
+        <a href="/reclamos/nuevo" class="btn btn-secondary btn-sm" style="justify-content:center">
+          Registrar reclamo
+        </a>
+        <a href="/checklist" class="btn btn-secondary btn-sm" style="justify-content:center">
+          Auditoría checklist
+        </a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ FILA 3: DISTRIBUCIÓN NPS (ancho completo) ══ -->
+<div class="chart-card dash-full-row">
+  <div class="chart-card-header">
+    <div class="chart-title">Distribución por Categoría NPS</div>
+    <div class="chart-subtitle">Detractores · Pasivos · Promotores</div>
+  </div>
+  <div class="nps-dist-blocks">
+    <div class="nps-dist-block nps-dist-det">
+      <div class="nps-dist-pct">{{ nps.detractors_pct }}%</div>
+      <div class="nps-dist-count">{{ nps.detractors }} personas</div>
+      <div class="nps-dist-label">Detractores <span class="nps-dist-range">(0 – 6)</span></div>
+    </div>
+    <div class="nps-dist-block nps-dist-pas">
+      <div class="nps-dist-pct">{{ nps.passives_pct }}%</div>
+      <div class="nps-dist-count">{{ nps.passives }} personas</div>
+      <div class="nps-dist-label">Pasivos <span class="nps-dist-range">(7 – 8)</span></div>
+    </div>
+    <div class="nps-dist-block nps-dist-pro">
+      <div class="nps-dist-pct">{{ nps.promoters_pct }}%</div>
+      <div class="nps-dist-count">{{ nps.promoters }} personas</div>
+      <div class="nps-dist-label">Promotores <span class="nps-dist-range">(9 – 10)</span></div>
+    </div>
+    <div class="nps-dist-block nps-dist-score">
+      <div class="nps-dist-pct {% if nps.nps_score >= 50 %}kpi-value-green{% elif nps.nps_score >= 0 %}kpi-value-blue{% else %}kpi-value-red{% endif %}">
+        {{ nps.nps_score }}
+      </div>
+      <div class="nps-dist-count">NPS Score final</div>
+      <div class="nps-dist-label">Pro% − Det% <span class="nps-dist-range">= resultado</span></div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+<script>
+  Chart.defaults.font.family = "'Inter', sans-serif";
+  Chart.defaults.color = '#8898AA';
+
+  // ── Trend Line Chart ──
+  const trendCtx = document.getElementById('trendChart');
+  if (trendCtx) {
+    const npsData  = {{ trend_nps   | tojson }};
+    const totalData = {{ trend_total | tojson }};
+
+    new Chart(trendCtx, {
+      type: 'line',
+      data: {
+        labels: {{ trend_labels | tojson }},
+        datasets: [
+          {
+            label: 'NPS Score',
+            data: npsData,
+            borderColor: '#1A73E8',
+            backgroundColor: 'rgba(26,115,232,0.08)',
+            borderWidth: 3,
+            pointBackgroundColor: '#ffffff',
+            pointBorderColor: '#1A73E8',
+            pointBorderWidth: 2.5,
+            pointRadius: 6,
+            pointHoverRadius: 9,
+            pointHoverBackgroundColor: '#1A73E8',
+            tension: 0.42,
+            fill: true,
+            yAxisID: 'y',
+          },
+          {
+            label: 'Respuestas',
+            data: totalData,
+            borderColor: '#0F9B6E',
+            backgroundColor: 'rgba(15,155,110,0.06)',
+            borderWidth: 2,
+            borderDash: [5, 4],
+            pointRadius: 4,
+            pointHoverRadius: 7,
+            pointBackgroundColor: '#0F9B6E',
+            tension: 0.42,
+            fill: false,
+            yAxisID: 'y2',
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            align: 'end',
+            labels: { font: { size: 12 }, boxWidth: 14, padding: 18, usePointStyle: true }
+          },
+          tooltip: {
+            backgroundColor: '#0F2C59',
+            titleColor: '#FFFFFF',
+            bodyColor: '#CBD5E1',
+            borderColor: 'rgba(255,255,255,0.1)',
+            borderWidth: 1,
+            padding: 12,
+            cornerRadius: 8,
+            titleFont: { weight: '700', size: 13 },
+            bodyFont: { size: 12 },
+            callbacks: {
+              title: (items) => `📅 ${items[0].label}`,
+              label: (item) => {
+                if (item.datasetIndex === 0) {
+                  const v = item.raw;
+                  const icon = v >= 50 ? '🟢' : v >= 0 ? '🟡' : '🔴';
+                  return `  ${icon} NPS Score: ${v}`;
+                }
+                return `  📊 Respuestas: ${item.raw}`;
+              },
+              afterBody: (items) => {
+                const nps = items.find(i => i.datasetIndex === 0);
+                if (!nps) return [];
+                const v = nps.raw;
+                if (v >= 50) return ['  ✅ Excelente — zona promotora'];
+                if (v >= 30) return ['  👍 Bueno — por encima del promedio'];
+                if (v >= 0)  return ['  ⚠️  Regular — hay oportunidad de mejora'];
+                return ['  ❌ Crítico — requiere atención inmediata'];
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: '#F0F2F5', drawBorder: false },
+            ticks: { font: { size: 11 }, color: '#8898AA', maxRotation: 30 },
+            title: { display: true, text: 'Fecha', font: { size: 11 }, color: '#8898AA' }
+          },
+          y: {
+            min: -100,
+            max: 100,
+            grid: {
+              color: (ctx) => ctx.tick.value === 0 ? 'rgba(26,115,232,0.35)' : '#F0F2F5',
+              lineWidth: (ctx) => ctx.tick.value === 0 ? 2 : 1,
+              drawBorder: false,
+            },
+            ticks: {
+              font: { size: 11 },
+              color: '#8898AA',
+              callback: (v) => v === 0 ? '0 ←' : v,
+              stepSize: 25,
+            },
+            title: { display: true, text: 'NPS Score (-100 a 100)', font: { size: 11 }, color: '#8898AA' }
+          },
+          y2: {
+            position: 'right',
+            grid: { display: false, drawBorder: false },
+            ticks: { font: { size: 11 }, color: '#0F9B6E' },
+            title: { display: true, text: 'Nº Respuestas', font: { size: 11 }, color: '#0F9B6E' }
+          }
+        }
+      }
+    });
+  }
+
+  // ── Sentiment Donut ──
+  const sentCtx = document.getElementById('sentimentChart');
+  if (sentCtx) {
+    new Chart(sentCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Positivo', 'Neutral', 'Negativo'],
+        datasets: [{
+          data: [
+            {{ sentiment_dist.get('Positivo', 0) }},
+            {{ sentiment_dist.get('Neutral', 0) }},
+            {{ sentiment_dist.get('Negativo', 0) }},
+          ],
+          backgroundColor: ['#0F9B6E', '#D97706', '#DC2626'],
+          borderWidth: 3,
+          borderColor: '#FFFFFF',
+          hoverOffset: 8,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '68%',
+        plugins: {
+          legend: { display: false },
+          tooltip: { backgroundColor: '#0F2C59', padding: 8 }
+        }
+      }
+    });
+  }
+</script>
+{% endblock %}

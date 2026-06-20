@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gracias por tu opinión</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+<div class="survey-wrapper">
+  <div class="survey-card" style="text-align:center">
+    <div style="font-size:3.5rem;margin-bottom:16px">✅</div>
+    <h1 style="font-size:1.5rem;font-weight:800;color:var(--navy);margin-bottom:8px">
+      ¡Gracias por tu opinión!
+    </h1>
+    <p style="color:var(--text-secondary);font-size:0.9rem;line-height:1.6">
+      {% if survey.thank_you_message %}
+        {{ survey.thank_you_message }}
+      {% else %}
+        Tu feedback ha sido registrado. Lo tendremos muy en cuenta para seguir mejorando.
+      {% endif %}
+    </p>
+    <div style="margin-top:28px;padding-top:20px;border-top:1px solid var(--border)">
+      <p style="font-size:0.75rem;color:var(--text-muted)">Puedes cerrar esta ventana</p>
+    </div>
+  </div>
+</div>
+</body>
+</html>

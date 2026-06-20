@@ -1,0 +1,62 @@
+# ── Entorno virtual ──
+venv/
+.venv/
+env/
+.env/
+
+# ── Variables de entorno (contienen claves secretas) ──
+.env
+.env.local
+.env.production
+
+# ── Base de datos ──
+*.db
+*.sqlite
+*.sqlite3
+nps_platform.db
+
+# ── Python ──
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+
+# ── Logs ──
+*.log
+*.txt
+uvicorn_*.txt
+srv_out.txt
+srv_err.txt
+err*.txt
+out*.txt
+
+# ── IDEs ──
+.vscode/
+.idea/
+*.suo
+*.user
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ── Pytest / Coverage ──
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# ── MyPy ──
+.mypy_cache/
+.dmypy.json
+
+# ── Archivos temporales ──
+*.tmp
+*.bak
+*.orig

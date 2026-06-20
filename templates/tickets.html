@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Tickets — WILEY TECNOLOGY{% endblock %}
+{% block page_title %}Gestión de Tickets{% endblock %}
+{% block page_subtitle %}Casos de recuperación de clientes{% endblock %}
+
+{% block topbar_actions %}
+<div class="filter-bar">
+  <form method="get" action="/tickets">
+    <select name="status_filter" class="filter-select" data-auto-submit>
+      <option value="">Todos los estados</option>
+      {% for s in TicketStatus %}
+      <option value="{{ s.value }}" {% if status_filter == s.value %}selected{% endif %}>
+        {{ s.value | capitalize }}
+      </option>
+      {% endfor %}
+    </select>
+  </form>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="data-card">
+  <div class="data-card-header">
+    <div class="data-card-title">
+      Tickets ({{ tickets | length }})
+    </div>
+  </div>
+
+  {% if tickets %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Ticket</th>
+        <th>Prioridad</th>
+        <th>Estado</th>
+        <th>Título</th>
+        <th>Contacto</th>
+        <th>Creado</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in tickets %}
+      <tr class="ticket-priority-{{ t.priority.value }}">
+        <td>
+          <code style="font-size:0.75rem;font-weight:600;color:var(--blue)">{{ t.ticket_number }}</code>
+          {% if t.auto_generated %}
+          <div><span class="badge badge-warning" style="font-size:0.6rem">Auto</span></div>
+          {% endif %}
+        </td>
+        <td>
+          {% if t.priority.value == 'critical' %}
+          <span class="badge badge-danger">Crítico</span>
+          {% elif t.priority.value == 'high' %}
+          <span class="badge badge-warning">Alto</span>
+          {% elif t.priority.value == 'medium' %}
+          <span class="badge badge-blue">Medio</span>
+          {% else %}
+          <span class="badge badge-neutral">Bajo</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if t.status.value == 'open' %}
+          <span class="badge badge-danger">Abierto</span>
+          {% elif t.status.value == 'in_progress' %}
+          <span class="badge badge-warning">En proceso</span>
+          {% elif t.status.value == 'resolved' %}
+          <span class="badge badge-success">Resuelto</span>
+          {% else %}
+          <span class="badge badge-neutral">Cerrado</span>
+          {% endif %}
+        </td>
+        <td style="max-width:280px">
+          <div style="font-weight:600;color:var(--text-primary);font-size:0.83rem">{{ t.title }}</div>
+        </td>
+        <td>
+          <span style="font-size:0.78rem">{{ t.customer_contact or '—' }}</span>
+        </td>
+        <td>
+          <span style="font-size:0.75rem;color:var(--text-muted)">
+            {{ t.created_at.strftime('%d/%m/%y %H:%M') if t.created_at else '—' }}
+          </span>
+        </td>
+        <td>
+          <a href="/tickets/{{ t.id }}" class="btn btn-secondary btn-sm">Ver</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div style="padding:40px;text-align:center;color:var(--text-muted)">
+    <div style="font-size:2rem;margin-bottom:12px">🎉</div>
+    <div style="font-weight:600">Sin tickets activos</div>
+    <div style="font-size:0.8rem;margin-top:4px">Los tickets se crean automáticamente cuando se detecta feedback negativo</div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

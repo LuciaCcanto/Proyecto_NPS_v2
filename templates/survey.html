@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ survey.name }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+<div class="survey-wrapper">
+  <div class="survey-card">
+
+    <!-- Brand / Header -->
+    <div class="survey-brand">
+      <div class="survey-brand-name">
+        {% if survey.branch %}{{ survey.branch.name }}{% else %}WILEY TECNOLOGY{% endif %}
+      </div>
+      {% if survey.welcome_message %}
+      <p class="survey-welcome">{{ survey.welcome_message }}</p>
+      {% endif %}
+    </div>
+
+    <!-- Form -->
+    <form id="survey-form" method="post" action="/survey/{{ survey.slug }}/submit" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="channel" value="{{ channel }}">
+      <input type="hidden" id="nps-hidden-input" name="nps_score" value="">
+
+      {% for question in survey.questions %}
+        {% if question.question_type.value == 'nps_scale' %}
+        <div class="nps-scale-wrapper">
+          <div class="nps-scale-label">{{ question.text }}</div>
+          <div class="nps-scale" role="group" aria-label="Escala NPS">
+            {% for i in range(question.scale_min, question.scale_max + 1) %}
+            <button
+              type="button"
+              class="nps-btn"
+              data-score="{{ i }}"
+              aria-label="{{ i }}"
+            >{{ i }}</button>
+            {% endfor %}
+          </div>
+          <div class="nps-scale-extremes">
+            <span>{{ question.min_label or 'Muy improbable' }}</span>
+            <span>{{ question.max_label or 'Muy probable' }}</span>
+          </div>
+        </div>
+
+        {% elif question.question_type.value == 'rating_scale' %}
+        <div class="form-group">
+          <label class="form-label">{{ question.text }}</label>
+          <div style="display:flex; gap:6px; flex-wrap:wrap">
+            {% for i in range(question.scale_min, question.scale_max + 1) %}
+            <label style="cursor:pointer">
+              <input type="radio" name="csat_score" value="{{ i }}" style="display:none" class="rating-radio">
+              <div class="nps-btn" data-score="{{ i }}">{{ i }}</div>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        {% elif question.question_type.value == 'text' %}
+        <div class="form-group" style="margin-top:16px">
+          <label class="form-label" for="q_{{ question.id }}">
+            {{ question.text }}
+            {% if not question.is_required %}
+            <span style="color:var(--text-muted);font-weight:400">(Opcional)</span>
+            {% endif %}
+          </label>
+          <textarea
+            class="form-control"
+            id="q_{{ question.id }}"
+            name="open_comment"
+            rows="3"
+            placeholder="Escribe tu comentario aquí..."
+            maxlength="2000"
+            {% if question.is_required %}required{% endif %}
+          ></textarea>
+        </div>
+
+        {% elif question.question_type.value == 'single_choice' %}
+        <div class="form-group">
+          <div class="form-label">{{ question.text }}</div>
+          {% for option in question.options %}
+          <label style="display:flex;align-items:center;gap:8px;padding:8px 0;cursor:pointer">
+            <input type="radio" name="q_{{ question.id }}" value="{{ option.id }}">
+            <span style="font-size:0.875rem">{{ option.text }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        {% endif %}
+      {% endfor %}
+
+      <!-- Bien o Servicio -->
+      <div style="border-top:1px solid var(--border);margin-top:20px;padding-top:16px">
+        <p style="font-size:0.8rem;font-weight:600;color:var(--text-secondary);margin-bottom:10px">
+          ¿Tu experiencia es sobre un…?
+        </p>
+        <div style="display:flex;gap:12px">
+          <label style="flex:1;cursor:pointer">
+            <input type="radio" name="tipo_feedback" value="bien" style="display:none" class="tipo-radio">
+            <div class="tipo-btn" data-tipo="bien" style="border:2px solid var(--border);border-radius:10px;padding:12px;text-align:center;transition:all .18s">
+              <div style="font-size:1.4rem">📦</div>
+              <div style="font-size:0.8rem;font-weight:600;margin-top:4px;color:var(--navy)">Bien</div>
+              <div style="font-size:0.7rem;color:var(--text-muted)">Producto físico</div>
+            </div>
+          </label>
+          <label style="flex:1;cursor:pointer">
+            <input type="radio" name="tipo_feedback" value="servicio" style="display:none" class="tipo-radio">
+            <div class="tipo-btn" data-tipo="servicio" style="border:2px solid var(--border);border-radius:10px;padding:12px;text-align:center;transition:all .18s">
+              <div style="font-size:1.4rem">🛎️</div>
+              <div style="font-size:0.8rem;font-weight:600;margin-top:4px;color:var(--navy)">Servicio</div>
+              <div style="font-size:0.7rem;color:var(--text-muted)">Atención / proceso</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Contact (optional) -->
+      <div style="border-top:1px solid var(--border);margin-top:16px;padding-top:16px">
+        <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:12px">Datos de contacto (opcional)</p>
+        <div class="form-group">
+          <input class="form-control" type="email" name="customer_email" placeholder="tu@email.com (opcional)">
+        </div>
+        <div class="form-group">
+          <input class="form-control" type="tel" name="customer_phone" placeholder="Teléfono (opcional)">
+        </div>
+      </div>
+
+      <button
+        type="submit"
+        id="survey-submit-btn"
+        class="btn btn-primary w-full"
+        style="margin-top:8px;justify-content:center;font-size:1rem;padding:14px"
+        disabled
+      >
+        Enviar mi opinión
+      </button>
+    </form>
+
+    <p style="text-align:center;font-size:0.7rem;color:var(--text-muted);margin-top:16px">
+      Tu privacidad es importante. Esta información se usa únicamente para mejorar nuestro servicio.
+    </p>
+  </div>
+</div>
+<script src="/static/js/app.js"></script>
+<script>
+  // Rating scale visual sync
+  document.querySelectorAll('.rating-radio').forEach(radio => {
+    radio.addEventListener('change', () => {
+      document.querySelectorAll('.rating-radio').forEach(r => {
+        r.nextElementSibling.classList.remove('selected');
+      });
+      radio.nextElementSibling.classList.add('selected');
+      document.getElementById('survey-submit-btn').disabled = false;
+    });
+  });
+
+  // Bien / Servicio card selection
+  document.querySelectorAll('.tipo-radio').forEach(radio => {
+    radio.addEventListener('change', () => {
+      document.querySelectorAll('.tipo-btn').forEach(btn => {
+        btn.style.borderColor = 'var(--border)';
+        btn.style.background = '';
+      });
+      const card = radio.nextElementSibling;
+      card.style.borderColor = '#1A73E8';
+      card.style.background = 'rgba(26,115,232,0.05)';
+    });
+  });
+</script>
+</body>
+</html>
